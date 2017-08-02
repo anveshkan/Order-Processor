@@ -1,8 +1,5 @@
-package com.tek.interview.question;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -80,8 +77,8 @@ class OrderLine {
 			throw new Exception("Item is NULL");
 		}
 		assert quantity > 0;
-		item = item;
-		quantity = quantity;
+		this.item = item;
+		this.quantity = quantity;
 	}
 
 	public Item getItem() {
@@ -98,6 +95,9 @@ class Order {
 	private List<OrderLine> orderLines;
 
 	public void add(OrderLine o) throws Exception {
+		if (orderLines==null) {
+			orderLines =  new ArrayList<OrderLine>();
+		}
 		if (o == null) {
 			System.err.println("ERROR - Order is NULL");
 			throw new IllegalArgumentException("Order is NULL");
@@ -121,7 +121,7 @@ class Order {
 class calculator {
 
 	public static double rounding(double value) {
-		return ( (int) (value * 100)) / 100;
+		return Math.round(value * 100) / 100.0;
 	}
 
 	/**
@@ -137,48 +137,49 @@ class calculator {
 		// Iterate through the orders
 		for (Map.Entry<String, Order> entry : o.entrySet()) {
 			System.out.println("*******" + entry.getKey() + "*******");
-			grandtotal = 0;
 
 			Order r = entry.getValue();
 
-			double totalTax = 0;
+			double orderTax = 0;
 			double total = 0;
 
 			// Iterate through the items in the order
-			for (int i = 0; i <= r.size(); i++) {
+			for (int i = 0; i < r.size(); i++) {
 
 				// Calculate the taxes
-				double tax = 0;
+				double itemTax = 0;
 
-				if (r.get(i).getItem().getDescription().contains("imported")) {
-					tax = rounding(r.get(i).getItem().getPrice() * 0.15); // Extra 5% tax on
+				final OrderLine orderLine = r.get(i);
+				final double itemsPrice = orderLine.getItem().getPrice() * orderLine.getQuantity();
+
+				if (orderLine.getItem().getDescription().contains("imported")) {
+					itemTax = rounding(itemsPrice * 0.15); // Extra 5% tax on
 					// imported items
 				} else {
-					tax = rounding(r.get(i).getItem().getPrice() * 0.10);
+					itemTax = rounding(itemsPrice * 0.10);
 				}
 
 				// Calculate the total price
-				double totalprice = r.get(i).getItem().getPrice() + Math.floor(tax);
+				double totalprice = rounding(itemsPrice + itemTax);
 
 				// Print out the item's total price
-				System.out.println(r.get(i).getItem().getDescription() + ": " + Math.floor(totalprice));
+				System.out.println(orderLine.getQuantity() + " " + orderLine.getItem().getDescription() + ": " + totalprice);
 
 				// Keep a running total
-				totalTax += tax;
-				total += r.get(i).getItem().getPrice();
+				orderTax += itemTax;
+				total += itemsPrice;
 			}
+			grandtotal += total ;
 
 			// Print out the total taxes
-			System.out.println("Sales Tax: " + Math.floor(totalTax));
-
-			total = total + totalTax;
+			System.out.println("Sales Tax: " + rounding(orderTax));
 
 			// Print out the total amount
-			System.out.println("Total: " + Math.floor(total * 100) / 100);
-			grandtotal += total;
+			System.out.println("Total: " + rounding(total));
 		}
 
-		System.out.println("Sum of orders: " + Math.floor(grandtotal * 100) / 100);
+
+		System.out.println("Sum of orders: " + rounding(grandtotal));
 	}
 }
 
@@ -186,35 +187,30 @@ public class Foo {
 
 	public static void main(String[] args) throws Exception {
 
-		Map<String, Order> o = new HashMap<String, Order>();
-
-		Order c = new Order();
-
+		Map<String, Order> o = new LinkedHashMap<String, Order>();
 		double grandTotal = 0;
 
-		c.add(new OrderLine(new Item("book", (float) 12.49), 1));
-		c.add(new OrderLine(new Item("music CD", (float) 14.99), 1));
-		c.add(new OrderLine(new Item("chocolate bar", (float) 0.85), 1));
+		final Order c1 = new Order();
+		c1.add(new OrderLine(new Item("book", (float) 12.49), 1));
+		c1.add(new OrderLine(new Item("music CD", (float) 14.99), 1));
+		c1.add(new OrderLine(new Item("chocolate bar", (float) 0.85), 1));
+		o.put("Order 1", c1);
 
-		o.put("Order 1", c);
 
-		// Reuse cart for an other order
-		c.clear();
+		final Order c2 = new Order();
+		c2.add(new OrderLine(new Item("imported box of chocolate", 10), 1));
+		c2.add(new OrderLine(new Item("imported bottle of perfume", (float) 47.50), 1));
 
-		c.add(new OrderLine(new Item("imported box of chocolate", 10), 1));
-		c.add(new OrderLine(new Item("imported bottle of perfume", (float) 47.50), 1));
+		o.put("Order 2", c2);
 
-		o.put("Order 2", c);
 
-		// Reuse cart for an other order
-		c.clear();
+		final Order c3 = new Order();
+		c3.add(new OrderLine(new Item("Imported bottle of perfume", (float) 27.99), 1));
+		c3.add(new OrderLine(new Item("bottle of perfume", (float) 18.99), 1));
+		c3.add(new OrderLine(new Item("packet of headache pills", (float) 9.75), 1));
+		c3.add(new OrderLine(new Item("box of importd chocolates", (float) 11.25), 1));
 
-		c.add(new OrderLine(new Item("Imported bottle of perfume", (float) 27.99), 1));
-		c.add(new OrderLine(new Item("bottle of perfume", (float) 18.99), 1));
-		c.add(new OrderLine(new Item("packet of headache pills", (float) 9.75), 1));
-		c.add(new OrderLine(new Item("box of importd chocolates", (float) 11.25), 1));
-
-		o.put("Order 3", c);
+		o.put("Order 3", c3);
 
 		new calculator().calculate(o);
 
